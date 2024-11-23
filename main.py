@@ -5,6 +5,7 @@ from database.connection import connection
 from fastapi.middleware.cors import CORSMiddleware
 from routers.users import user_router
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connection()
