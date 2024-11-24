@@ -3,6 +3,7 @@ from models.users import User, UserSignIn, UserSignUp
 from database.connection import get_session
 from sqlmodel import select
 from auth.hash_password import HashPassword
+from auth.jwt_handler import create_jwt_token
 
 user_router = APIRouter()
 
@@ -46,4 +47,7 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="패스워드가 일치하지 않습니다.",
         )
 
-    return {"message": "로그인에 성공했습니다."}
+    return {
+        "message": "로그인에 성공했습니다.",
+        "access_token": create_jwt_token(user.email, user.id)
+    }
