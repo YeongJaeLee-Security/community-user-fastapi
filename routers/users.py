@@ -49,8 +49,8 @@ async def sign_in(data: UserSignIn, response: Response, session=Depends(get_sess
     # 로그인 성공시 토큰 발급 
     tokens = create_jwt_token(user.email, user.id)
 
-    response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=True, samesite="Strict")
-    response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=True, samesite="Strict")
+    response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, )
+    response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, )
 
     # 토큰이 잘 발급되었나 확인
     print("Access Token Set:", tokens["access_token"])
@@ -61,8 +61,8 @@ async def sign_in(data: UserSignIn, response: Response, session=Depends(get_sess
 # 로그아웃 처리
 @user_router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="access_token", httponly=True, secure=True, samesite="Strict")
-    response.delete_cookie(key="refresh_token", httponly=True, secure=True, samesite="Strict")
+    response.delete_cookie(key="access_token", httponly=True, secure=False, )
+    response.delete_cookie(key="refresh_token", httponly=True, secure=False, )
     
     return {"message": "로그아웃에 성공했습니다."}
 
