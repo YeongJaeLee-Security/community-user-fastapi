@@ -10,6 +10,8 @@ pymysql = "*"
 pytest = "*"
 fastapi = "*"
 uvicorn = "*"
+passlib = "*"
+jose = "*"
 
 [dev-packages]
 
