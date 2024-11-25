@@ -20,7 +20,7 @@ def verify_jwt_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         exp = payload.get("exp")
-        if exp is None: 
+        if exp is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
         if time() > exp:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token expired")
@@ -38,7 +38,7 @@ def refresh_access_token(refresh_token: str) -> dict:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
         if time() > exp:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Refresh token expired")
-        
+
         # 새로운 액세스 토큰 발급
         email = payload["user"]
         user_id = payload["user_id"]

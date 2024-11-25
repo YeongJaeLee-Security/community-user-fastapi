@@ -9,7 +9,7 @@
 # async def authenticate(token: str = Depends(oauth2_scheme)):
 #     if not token:
 #         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="액세스 토큰이 누락되었습니다.")
-    
+
 #     payload = verify_jwt_token(token)
 #     return payload["user_id"]
 
@@ -21,11 +21,11 @@ async def authenticate(request: Request):
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="액세스 토큰이 누락되었습니다.")
-    
+
     try:
         # JWT 토큰 검증
         payload = verify_jwt_token(token)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 액세스 토큰입니다.")
-    
+
     return payload["user_id"]  # 검증된 사용자 ID 반환
