@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from config.Settings import Settings
+from config.settings import Settings
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy_utils import create_database, database_exists
 from fastapi import Depends
