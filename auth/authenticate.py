@@ -1,31 +1,39 @@
-# from fastapi import Depends, HTTPException, status
-# from fastapi.security import OAuth2PasswordBearer
-# from auth.jwt_handler import verify_jwt_token
+from fastapi import Depends, HTTPException, status, Request, Response
+from auth.jwt_handler import verify_jwt_token, refresh_access_token
 
-
-# # 요청이 들어올 때, Authorization 헤더에 토큰을 추출
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/signin")
-
-# async def authenticate(token: str = Depends(oauth2_scheme)):
-#     if not token:
-#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="액세스 토큰이 누락되었습니다.")
-
-#     payload = verify_jwt_token(token)
-#     return payload["user_id"]
-
-from fastapi import Depends, HTTPException, status, Request
-from auth.jwt_handler import verify_jwt_token
-
-async def authenticate(request: Request):
-    # 쿠키에서 access_token 가져오기
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="액세스 토큰이 누락되었습니다.")
-
-    try:
+async def authenticate(request: Request, response: Response):
+    
+    #Access Token 확인
+    access_token = request.cookies.get("access_token")
+    if access_token:
+        try:
         # JWT 토큰 검증
-        payload = verify_jwt_token(token)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 액세스 토큰입니다.")
+            payload = verify_jwt_token(access_token)
+            return payload["user_id"]
+        
+        except Exception:
+            pass
 
-    return payload["user_id"]  # 검증된 사용자 ID 반환
+    # Refresh Token 확인
+    refresh_token = request.cookies.get("refresh_token")
+       
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="토큰이 누락되었습니다.")
+    
+        # Refresh Token 검증 및 새로운 access token 발급
+    try:
+        # 새 엑세스 토큰 발급 (refresh_access_token 함수로 처리)
+        new_access_token = refresh_access_token(refresh_token)
+        
+        
+        # 새로운 액세스 토큰을 쿠키에 저장
+        response.set_cookie(key="access_token", value=new_access_token["access_token"], httponly=True, secure=False, samesite='strict')
+                
+        # 인증 성공, user_id 반환
+        payload = verify_jwt_token(new_access_token["access_token"])  # 새로 발급된 액세스 토큰을 검증
+        return payload["user_id"]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="리프레시 토큰이 유효하지 않습니다."
+        )

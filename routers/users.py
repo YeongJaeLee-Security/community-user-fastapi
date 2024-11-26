@@ -48,9 +48,13 @@ async def sign_in(data: UserSignIn, response: Response, session=Depends(get_sess
         )
     # 로그인 성공시 토큰 발급
     tokens = create_jwt_token(user.email, user.id)
-
-    response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, )
-    response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, )
+    
+    # HttpOnly 쿠키생성해서 클라이언트 브라우저에 저장 
+    # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 sesecure=False로설정하고 개발
+    # 실제 배포시엔 HTTPS를 적용하고 True로 변경
+    # samesite는 같은 사이트에서만 쿠키가 전송되게 설정함  
+    response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, samesite='strict')
+    response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, samesite='strict')
 
     # 토큰이 잘 발급되었나 확인
     print("Access Token Set:", tokens["access_token"])
@@ -61,8 +65,8 @@ async def sign_in(data: UserSignIn, response: Response, session=Depends(get_sess
 # 로그아웃 처리
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(key="access_token", httponly=True, secure=False, )
-    response.delete_cookie(key="refresh_token", httponly=True, secure=False, )
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
 
     return {"message": "로그아웃에 성공했습니다."}
 
