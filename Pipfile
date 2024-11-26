@@ -4,14 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = {extras = ["standard"], version = "*"}
 pydantic-settings = "*"
 sqlmodel = "*"
-pymysql = "*"
-pytest = "*"
-fastapi = "*"
-uvicorn = "*"
-passlib = "*"
-jose = "*"
+passlib = {extras = ["bcrypt"], version = "*"}
+bcrypt = "==3.2.0"
 
 [dev-packages]
 
