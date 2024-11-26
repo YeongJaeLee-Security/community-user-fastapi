@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from models.post import Post, PostPublic, PostCreate, PostUpdate
-from database.connection_temp import SessionDep
+from database.connection import SessionDep
 from sqlmodel import select
 
 from auth.authenticate import authenticate

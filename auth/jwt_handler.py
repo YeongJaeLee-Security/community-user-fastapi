@@ -1,7 +1,7 @@
 from time import time
 from fastapi import HTTPException, status
 from jose import jwt
-from config.Settings import Settings
+from config.settings import Settings
 
 settings = Settings()
 
