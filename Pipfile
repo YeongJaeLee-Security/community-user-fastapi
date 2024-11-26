@@ -9,6 +9,8 @@ pydantic-settings = "*"
 sqlmodel = "*"
 passlib = {extras = ["bcrypt"], version = "*"}
 bcrypt = "==3.2.0"
+python-jose = {extras = ["cryptography"], version = "*"}
+pydantic = {extras = ["email"], version = "*"}
 
 [dev-packages]
 
