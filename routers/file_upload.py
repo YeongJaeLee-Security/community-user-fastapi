@@ -1,8 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from pathlib import Path
-from sqlalchemy.orm import Session  # SQLAlchemy Session 사용
 from models.image import Image  # Image 모델 가져오기
-from database.connection import get_session  # 세션 의존성 주입 함수 가져오기
+from database.connection import SessionDep
 
 # 라우터 객체 생성
 router = APIRouter()
@@ -14,10 +13,11 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)  # 디렉토리가 없으면 생�
 
 @router.post("/upload-image/")
 async def upload_image(
-    file: UploadFile = File(...), 
-    session: Session = Depends(get_session)  # 세션 주입
+    *,
+    file: UploadFile = File(...),
+    session: SessionDep  # 세션 주입
 ):
-    
+
     # 파일 확장자 확인
     allowed_extensions = {".jpg", ".png"}
     file_extension = Path(file.filename).suffix.lower()

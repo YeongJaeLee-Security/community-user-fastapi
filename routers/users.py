@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from models.users import User, UserSignIn, UserSignUp
-from database.connection import get_session
+from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
 from auth.jwt_handler import create_jwt_token
@@ -11,7 +11,7 @@ hash_password = HashPassword()
 
 # 사용자 등록
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
+async def sign_new_user(data: UserSignUp, session: SessionDep) -> dict:
     statement = select(User).where(User.email == data.email)
     user = session.exec(statement).first()
     if user:
@@ -32,7 +32,7 @@ async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
 
 # 로그인 처리
 @router.post("/signin")
-async def sign_in(data: UserSignIn, response: Response, session=Depends(get_session)) -> dict:
+async def sign_in(data: UserSignIn, response: Response, session: SessionDep) -> dict:
     statement = select(User).where(User.email == data.email)
     user = session.exec(statement).first()
     if not user:
@@ -48,11 +48,11 @@ async def sign_in(data: UserSignIn, response: Response, session=Depends(get_sess
         )
     # 로그인 성공시 토큰 발급
     tokens = create_jwt_token(user.email, user.id)
-    
-    # HttpOnly 쿠키생성해서 클라이언트 브라우저에 저장 
+
+    # HttpOnly 쿠키생성해서 클라이언트 브라우저에 저장
     # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 sesecure=False로설정하고 개발
     # 실제 배포시엔 HTTPS를 적용하고 True로 변경
-    # samesite는 같은 사이트에서만 쿠키가 전송되게 설정함  
+    # samesite는 같은 사이트에서만 쿠키가 전송되게 설정함
     response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, samesite='strict')
     response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, samesite='strict')
 

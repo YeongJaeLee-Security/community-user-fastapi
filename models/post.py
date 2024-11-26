@@ -3,10 +3,11 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field
 
 class PostBase(SQLModel):
-    title: str
+    title: str = Field(index=True)
     content: str | None
     date: datetime
-    author: str
+
+    author: int = Field(foreign_key="user.id")
 
 class Post(PostBase, table=True):
     id: int | None = Field(default=None, primary_key=True)

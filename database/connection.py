@@ -1,6 +1,9 @@
+from typing import Annotated
+
 from config.Settings import Settings
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy_utils import create_database, database_exists
+from fastapi import Depends
 
 settings = Settings()
 
@@ -14,10 +17,11 @@ DATABASE_NAME = settings.DATABASE_NAME
 base_engine = create_engine(BASE_DATABASE_URL, echo=True)
 
 # 실제 데이터베이스 연결 URL
-engine_url = f"{settings.DATABASE_URL}/{settings.DATABASE_NAME}"
+engine_url = f"{BASE_DATABASE_URL}/{DATABASE_NAME}"
+connect_args = {"check_same_thread": False}
 
 # 실제 데이터베이스 연결 엔진
-engine = create_engine(engine_url, echo=True)
+engine = create_engine(engine_url, connect_args=connect_args, echo=True)
 
 def create_database_if_not_exists():
     if not database_exists(engine_url):  # URL 문자열 전달
@@ -41,3 +45,5 @@ def get_session():
     # with 구문으로 자원 해제 가능
     with Session(engine) as session:
         yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]

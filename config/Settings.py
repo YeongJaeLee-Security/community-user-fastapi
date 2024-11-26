@@ -1,10 +1,8 @@
-from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    DATABASE_URL: Optional[str] = None
-    DATABASE_NAME: Optional[str] = None
-    SECRET_KEY : Optional[str] = None
+    DATABASE_URL: str | None = None
+    DATABASE_NAME: str | None = None
+    SECRET_KEY : str | None = None
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
