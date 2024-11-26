@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from routers import auth, users, post
+from routers import auth, user, post
 from fastapi import FastAPI
 import uvicorn
 from database.connection import connection
@@ -22,7 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router, prefix="/auth")
+app.include_router(user.router, prefix="/auth")
 app.include_router(auth.router)
 app.include_router(post.router)
 
