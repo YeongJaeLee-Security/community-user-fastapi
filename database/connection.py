@@ -18,10 +18,19 @@ base_engine = create_engine(BASE_DATABASE_URL, echo=True)
 
 # 실제 데이터베이스 연결 URL
 engine_url = f"{BASE_DATABASE_URL}/{DATABASE_NAME}"
-connect_args = {"check_same_thread": False}
+
+
+args_engine = {
+    "url": engine_url,
+    "echo": True,
+}
+
+if "sqlite" in BASE_DATABASE_URL:
+    connect_args = {"check_same_thread": False}
+    args_engine.update({"connect_args": connect_args})
 
 # 실제 데이터베이스 연결 엔진
-engine = create_engine(engine_url, connect_args=connect_args, echo=True)
+engine = create_engine(**args_engine)
 
 def create_database_if_not_exists():
     if not database_exists(engine_url):  # URL 문자열 전달
