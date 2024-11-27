@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING, List
+# from typing import TYPE_CHECKING, List
 
 from pydantic import BaseModel, EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 
-if TYPE_CHECKING:
-    from models.post import PostPublic
+# if TYPE_CHECKING:
+#     from models.post import PostPublic
 
 # class User(SQLModel, table=True):
 #     id: int = Field(default=None, primary_key=True)
@@ -52,5 +52,5 @@ class UserUpdate(UserBase):
     username: str | None = None
     report_count: int| None = None
 
-class UserPublicWithPosts(UserPublic):
-    posts: List["PostPublic"] = []
+# class UserPublicWithPosts(UserPublic):
+#     posts: List["PostPublic"] = []
