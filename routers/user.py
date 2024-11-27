@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
-from models.user import User, UserSignIn, UserSignUp
+from models.user import User, UserSignIn, UserSignUp, UserPublicWithPosts
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
@@ -79,3 +79,10 @@ async def check_cookies(request: Request):
     if "access_token" not in cookies and "refresh_token" not in cookies:
         return {"message": "쿠키가 삭제되었습니다."}
     return {"message": "쿠키가 여전히 존재합니다."}
+
+@router.get("/profile/{user_id}", response_model=UserPublicWithPosts)
+def read_user(*, user_id: int, session: SessionDep):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Auhtor not found")
+    return user

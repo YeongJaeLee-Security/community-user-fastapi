@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Depends, Query
-from models.post import Post, PostPublic, PostCreate, PostUpdate
+from models.post import Post, PostPublic, PostCreate, PostUpdate, PostPublicWithUser
 from database.connection import SessionDep
 from sqlmodel import select
 
@@ -23,14 +23,12 @@ def create_post(
     session.refresh(post)
     return db_post
 
-@router.get("/post", response_model=list[PostPublic])
-def read_posts(
-    session: SessionDep,
-):
+@router.get("/post", response_model=list[PostPublicWithUser])
+def read_posts(session: SessionDep):
     posts = session.exec(select(Post)).all()
     return posts
 
-@router.get("/post/{post_id}", response_model=PostPublic)
+@router.get("/post/{post_id}", response_model=PostPublicWithUser)
 def read_post(*, post_id: int, session: SessionDep):
     post = session.get(Post, post_id)
     if not post:
@@ -58,7 +56,7 @@ def delete_post(*, post_id: int, session: SessionDep):
     session.commit()
     return {"ok": True}
 
-@router.get("/search/", response_model=list[PostPublic])
+@router.get("/search/", response_model=list[PostPublicWithUser])
 def search_post(
     *,
     q: Annotated[str | None, Query(max_length=50)] = None,

@@ -1,6 +1,11 @@
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import SQLModel, Field
+
+if TYPE_CHECKING:
+    from models.user import UserPublic
+
 
 class PostBase(SQLModel):
     title: str = Field(index=True)
@@ -21,3 +26,6 @@ class PostCreate(PostBase):
 class PostUpdate(PostBase):
     title: str | None = None
     content: str | None = None
+
+class PostPublicWithUser(PostPublic):
+    user: Optional["UserPublic"]
