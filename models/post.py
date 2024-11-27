@@ -23,7 +23,6 @@ class PostCreate(PostBase):
     pass
 
 class PostUpdate(PostBase):
-    title: str | None = None
     content: str | None = None
 
 # class PostPublicWithUser(PostPublic):

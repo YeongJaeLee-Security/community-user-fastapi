@@ -11,7 +11,7 @@ from auth.authenticate import authenticate
 router = APIRouter()
 
 @router.post("/submit", response_model=PostPublic)
-async def create_post(
+def create_post(
     *,
     post: PostCreate,
     user_id = Depends(authenticate),
@@ -25,12 +25,6 @@ async def create_post(
     session.refresh(db_post)
     return db_post
 
-# @router.get("/post", response_model=list[PostPublicWithUser])
-@router.get("/post", response_model=list[PostPublic])
-def read_posts(session: SessionDep):
-    posts = session.exec(select(Post)).all()
-    return posts
-
 # @router.get("/post/{post_id}", response_model=PostPublicWithUser)
 @router.get("/post/{post_id}", response_model=PostPublic)
 def read_post(*, post_id: int, session: SessionDep):
@@ -38,6 +32,12 @@ def read_post(*, post_id: int, session: SessionDep):
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     return post
+
+# @router.get("/post", response_model=list[PostPublicWithUser])
+@router.get("/post", response_model=list[PostPublic])
+def read_posts(session: SessionDep):
+    posts = session.exec(select(Post)).all()
+    return posts
 
 @router.patch("/post/{post_id}", response_model=PostPublic)
 def update_post(*, post_id: int, post: PostUpdate, session: SessionDep):
