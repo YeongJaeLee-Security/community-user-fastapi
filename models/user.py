@@ -56,5 +56,5 @@ class UserUpdate(UserBase):
     username: str | None = None
     report_count: int| None = None
 
-class UserPublicWithPosts(UserPublic):
-    posts: List["PostPublic"] = []
+# class UserPublicWithPosts(UserPublic):
+#     posts: List["PostPublic"] = []
