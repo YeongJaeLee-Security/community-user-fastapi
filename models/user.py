@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
-    from models.post import PostPublic
+#   from models.post import PostPublic
     from models.log import Log
     from models.report import Report
 

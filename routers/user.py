@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 from models.log import Log
-from models.user import User, UserSignIn, UserSignUp, UserPublicWithPosts
+# from models.user import User, UserSignIn, UserSignUp, UserPublicWithPosts
+from models.user import User, UserSignIn, UserSignUp
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
