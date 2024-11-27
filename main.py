@@ -1,8 +1,6 @@
 from contextlib import asynccontextmanager
-
-from routers import auth, user, post
+from routers import auth, user, post, report
 from fastapi import FastAPI
-import uvicorn
 from database.connection import connection
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,6 +23,13 @@ app.add_middleware(
 app.include_router(user.router, prefix="/auth")
 app.include_router(auth.router)
 app.include_router(post.router)
+app.include_router(report.router)
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )

@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
+from models.log import Log
 from models.user import User, UserSignIn, UserSignUp, UserPublicWithPosts
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
 from auth.jwt_handler import create_jwt_token
+from datetime import datetime
 
 router = APIRouter()
 
@@ -32,7 +34,7 @@ async def sign_new_user(data: UserSignUp, session: SessionDep) -> dict:
 
 # 로그인 처리
 @router.post("/signin")
-async def sign_in(data: UserSignIn, response: Response, session: SessionDep) -> dict:
+async def sign_in(data: UserSignIn, response: Response, session: SessionDep, request: Request) -> dict:
     statement = select(User).where(User.email == data.email)
     user = session.exec(statement).first()
     if not user:
@@ -59,6 +61,17 @@ async def sign_in(data: UserSignIn, response: Response, session: SessionDep) -> 
     # 토큰이 잘 발급되었나 확인
     print("Access Token Set:", tokens["access_token"])
     print("Refresh Token Set:", tokens["refresh_token"])
+
+    # 로그 저장
+    log_data = Log(
+        login_date=datetime.now(),
+        user_agent=request.headers.get('user-agent'),
+        user_id=user.id
+    )
+
+    session.add(log_data)
+    session.commit()
+    session.refresh(log_data)
 
     return {"message": "로그인에 성공했습니다."}
 
