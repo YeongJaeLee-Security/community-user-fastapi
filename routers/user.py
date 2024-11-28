@@ -23,7 +23,16 @@ async def sign_new_user(data: UserSignUp, session: SessionDep) -> dict:
     user = session.exec(statement).first()
     if user:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="동일한 사용자가 존재합니다."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="동일한 사용자 이메일이 존재합니다."
+        )
+
+    statement = select(User).where(User.email == data.email)
+    user = session.exec(statement).first()
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="동일한 사용자 이름이 존재합니다."
         )
 
     new_user = User(
@@ -112,42 +121,59 @@ def read_user(*, user_id: int, session: SessionDep):
     return user
 
 @router.get("/settings", response_model=UserPublicWithPosts)
-def read_user(
+def read_auth(
     *,
-    user_id = Depends(authenticate),
+    auth_id: int = Depends(authenticate),
     session: SessionDep
 ):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    auth = session.get(User, auth_id)
+    if not auth:
+        raise HTTPException(status_code=404, detail="Auth not found")
+    return auth
 
 @router.patch("/settings", response_model=UserPublic)
-def update_user(
+def update_auth(
     *,
-    user_id = Depends(authenticate),
-    user: UserUpdate,
+    auth_id: int = Depends(authenticate),
+    auth: UserUpdate,
     session: SessionDep
 ):
-    db_user = session.get(User, user_id)
-    if not db_user:
+    db_auth = session.get(User, auth_id)
+    if not db_auth:
         raise HTTPException(status_code=404, detail="User not found")
-    user_data = user.model_dump(exclude_unset=True)
-    db_user.sqlmodel_update(user_data)
-    session.add(db_user)
+
+    statement = select(User).where(User.email == auth.email)
+    user = session.exec(statement).first()
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="동일한 이메일이 존재합니다."
+        )
+    statement = select(User).where(User.username == auth.username)
+    user = session.exec(statement).first()
+    if user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="동일한 사용자 이름이 존재합니다."
+        )
+
+    auth_data = auth.model_dump(exclude_unset=True)
+    db_auth.sqlmodel_update(auth_data)
+    session.add(db_auth)
     session.commit()
-    session.refresh(db_user)
-    return db_user
+    session.refresh(db_auth)
+
+    return db_auth
 
 @router.delete("/settings")
-def delete_user(
+def delete_auth(
     *,
-    user_id = Depends(authenticate),
+    auth_id: int = Depends(authenticate),
     session: SessionDep
 ):
-    user = session.get(User, user_id)
-    if not user:
+    auth = session.get(User, auth_id)
+    if not auth:
         raise HTTPException(status_code=404, detail="User not found")
-    session.delete(user)
+    session.delete(auth)
     session.commit()
     return {"ok": True}

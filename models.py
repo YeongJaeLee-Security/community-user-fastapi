@@ -66,13 +66,13 @@ class UserSignIn(UserSignBase):
     pass
 
 class UserBase(SQLModel):
-    email: EmailStr = Field(index=True)
+    email: EmailStr = Field(index=True, unique=True)
     password: str
-    username: str
+    username: str = Field(index=True, unique=True)
     report_count: int = Field(default=0)
 
 class User(UserBase, table=True):
-    id: int = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
 
     reports: list[Report] = Relationship(back_populates="user")
     logs: list[Log] = Relationship(back_populates="user")
