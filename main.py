@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from routers import auth, user, post, report
+from routers import auth, user, post, report, notice
 from fastapi import FastAPI
 from database.connection import connection
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,10 +20,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user.router, prefix="/auth")
-app.include_router(auth.router)
-app.include_router(post.router)
-app.include_router(report.router)
+app.include_router(user.router, prefix="/auth", tags=["user"])
+app.include_router(auth.router, tags=["auth"])
+app.include_router(post.router, tags=["post"])
+app.include_router(report.router, tags=["report"])
+app.include_router(notice.router, tags=["notice"])
 
 if __name__ == "__main__":
     import uvicorn

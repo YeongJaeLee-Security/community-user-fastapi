@@ -1,0 +1,61 @@
+from fastapi import APIRouter, HTTPException, status
+from database.connection import SessionDep
+import requests
+import json
+from datetime import datetime
+
+router = APIRouter()
+
+@router.get("/notice", status_code=status.HTTP_200_OK)
+def read_notice(session: SessionDep):
+    url = f"http://localhost:8010/notice/notices"
+    resp = requests.get(url=url)
+
+    if resp.status_code == 200:
+        # JSON으로 변환
+        try:
+            notices = resp.json()
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to decode JSON from API response"
+            )
+
+        # 데이터 구조 검증
+        if not isinstance(notices, list):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid data format received from notices API"
+            )
+
+        # 공지가 없을 때 예외 처리
+        if not notices:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No notices available"
+            )
+
+        # 날짜를 기준으로 정렬
+        try:
+            sorted_notices = sorted(
+                notices,
+                key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"),
+                reverse=True
+            )
+        except KeyError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid notice format: Missing 'date' field"
+            )
+
+        # 최신 공지 반환 검증
+        latest_notice = sorted_notices[0].get("title") if sorted_notices else None
+        if not latest_notice:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No valid title found in the latest notice"
+            )
+
+        return {"message": latest_notice}
+
+    raise HTTPException(status_code=resp.status_code, detail="Failed to fetch notices")
