@@ -8,8 +8,21 @@ router = APIRouter()
 
 @router.get("/notice", status_code=status.HTTP_200_OK)
 def read_notice(session: SessionDep):
-    url = f"http://localhost:8010/notice/notices"
-    resp = requests.get(url=url)
+    url = "http://localhost:8010/notice/notices"
+    try:
+        resp = requests.get(url=url)
+        resp.raise_for_status()
+    except requests.ConnectionError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The notices API server is unavailable."
+        )
+    except requests.Timeout:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="The notices API server timed out."
+        )
+    
 
     if resp.status_code == 200:
         # JSON으로 변환

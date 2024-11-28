@@ -36,3 +36,9 @@ def create_report(*, data: ReportContent=Body(..., description="신고 내용"),
     session.add(report_user)
 
     return {"message" : "신고가 접수 되었습니다."}
+
+# 신고 전체 조회
+# @router.get("/report", status_code=status.HTTP_200_OK)
+
+# 사용자별 신고 조회
+# @router.get("/report/", status_code=status.HTTP_200_OK)
