@@ -1,6 +1,7 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from pathlib import Path
-from models.image import Image  # Image 모델 가져오기
+# from models.image import Image  # Image 모델 가져오기
+from models import Image  # Image 모델 가져오기
 from database.connection import SessionDep
 
 # 라우터 객체 생성
