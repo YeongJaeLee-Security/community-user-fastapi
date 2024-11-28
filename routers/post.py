@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 # from models.post import Post, PostPublic, PostCreate, PostUpdate, PostPublicWithUser
@@ -60,11 +60,16 @@ def delete_post(*, post_id: int, session: SessionDep):
     session.commit()
     return {"ok": True}
 
-# @router.get("/search/", response_model=list[PostPublicWithUser])
-# def search_post(
-#     *,
-#     q: Annotated[str | None, Query(max_length=50)] = None,
-#     session: SessionDep
-# ):
-#     posts = session.exec(select(Post).where()).all()
-#     return posts
+@router.get("/search/", response_model=list[Post])
+def search_post(
+    *,
+    title: Optional[str]= Query(None, max_length=50),
+    session: SessionDep
+):
+    print(title)
+    if title is None or title.strip() == "":
+        raise HTTPException(status_code=400, detail="Search title cannot be empty")
+    
+    query = select(Post).where(Post.title.contains(title))
+    posts = session.exec(query).all()
+    return posts

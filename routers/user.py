@@ -53,13 +53,14 @@ async def sign_in(data: UserSignIn, response: Response, session: SessionDep, req
     tokens = create_jwt_token(user.email, user.id)
 
     # HttpOnly 쿠키생성해서 클라이언트 브라우저에 저장
-    # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 sesecure=False로설정하고 개발
+    # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 secure=False로설정하고 개발
     # 실제 배포시엔 HTTPS를 적용하고 True로 변경
     # samesite는 같은 사이트에서만 쿠키가 전송되게 설정함
     response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, samesite='strict')
     response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, samesite='strict')
 
     # 토큰이 잘 발급되었나 확인
+    # 배포 할땐 삭제예정
     print("Access Token Set:", tokens["access_token"])
     print("Refresh Token Set:", tokens["refresh_token"])
 
