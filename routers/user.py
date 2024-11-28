@@ -1,12 +1,16 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
-from models.log import Log
-# from models.user import User, UserSignIn, UserSignUp, UserPublicWithPosts
-from models.user import User, UserSignIn, UserSignUp
+# from models.log import Log
+# from models.user import User, UserSignIn, UserSignUp
+from models import Log
+from models import User, UserSignIn, UserSignUp
+from models import UserPublic, UserUpdate, UserPublicWithPosts
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
 from auth.jwt_handler import create_jwt_token
 from datetime import datetime
+
+from auth.authenticate import authenticate
 
 router = APIRouter()
 
@@ -53,13 +57,14 @@ async def sign_in(data: UserSignIn, response: Response, session: SessionDep, req
     tokens = create_jwt_token(user.email, user.id)
 
     # HttpOnly 쿠키생성해서 클라이언트 브라우저에 저장
-    # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 sesecure=False로설정하고 개발
+    # 개발환경에선 HTTPS를 적용하기 힘들기 때문에 secure=False로설정하고 개발
     # 실제 배포시엔 HTTPS를 적용하고 True로 변경
     # samesite는 같은 사이트에서만 쿠키가 전송되게 설정함
     response.set_cookie(key="access_token", value=tokens["access_token"], httponly=True, secure=False, samesite='strict')
     response.set_cookie(key="refresh_token", value=tokens["refresh_token"], httponly=True, secure=False, samesite='strict')
 
     # 토큰이 잘 발급되었나 확인
+    # 배포 할땐 삭제예정
     print("Access Token Set:", tokens["access_token"])
     print("Refresh Token Set:", tokens["refresh_token"])
 
@@ -94,9 +99,55 @@ async def check_cookies(request: Request):
         return {"message": "쿠키가 삭제되었습니다."}
     return {"message": "쿠키가 여전히 존재합니다."}
 
-# @router.get("/profile/{user_id}", response_model=UserPublicWithPosts)
-# def read_user(*, user_id: int, session: SessionDep):
-#     user = session.get(User, user_id)
-#     if not user:
-#         raise HTTPException(status_code=404, detail="Auhtor not found")
-#     return user
+@router.get("/profile", response_model=list[UserPublicWithPosts])
+def read_users(session: SessionDep):
+    users = session.exec(select(User)).all()
+    return users
+
+@router.get("/profile/{user_id}", response_model=UserPublicWithPosts)
+def read_user(*, user_id: int, session: SessionDep):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.get("/settings", response_model=UserPublicWithPosts)
+def read_user(
+    *,
+    user_id = Depends(authenticate),
+    session: SessionDep
+):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@router.patch("/settings", response_model=UserPublic)
+def update_user(
+    *,
+    user_id = Depends(authenticate),
+    user: UserUpdate,
+    session: SessionDep
+):
+    db_user = session.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_data = user.model_dump(exclude_unset=True)
+    db_user.sqlmodel_update(user_data)
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user
+
+@router.delete("/settings")
+def delete_user(
+    *,
+    user_id = Depends(authenticate),
+    session: SessionDep
+):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    session.delete(user)
+    session.commit()
+    return {"ok": True}
