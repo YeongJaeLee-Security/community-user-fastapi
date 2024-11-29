@@ -1,7 +1,7 @@
-
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import EmailStr
+from typing import Optional
 
 class Image(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -12,6 +12,7 @@ class Log(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     login_date: datetime
     user_agent: str
+    user_referer: str
     user_id: int = Field(default=None, foreign_key="user.id")
 
     user: "User" = Relationship(back_populates="logs")
@@ -19,6 +20,7 @@ class Log(SQLModel, table=True):
 class LogData(SQLModel):
     login_date: datetime
     user_agent: str
+    user_referer: str
     user_id: int
 
 class Report(SQLModel, table=True):
@@ -55,6 +57,7 @@ class PostCreate(PostBase):
 
 class PostUpdate(PostBase):
     content: str | None = None
+    image_path: Optional[str] = None
 
 class UserSignBase(SQLModel):
     email: EmailStr

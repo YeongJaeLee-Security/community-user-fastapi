@@ -82,16 +82,64 @@ def read_post(*, post_id: int, session: SessionDep):
     return post
 
 @router.patch("/post/{post_id}", response_model=PostPublic)
-def update_post(*, post_id: int, post: PostUpdate, session: SessionDep):
+async def update_post(
+    session: SessionDep,
+    post_id: int,
+    content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = None,
+    remove_image: Optional[bool] = False,
+):
     db_post = session.get(Post, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
-    post_data = post.model_dump(exclude_unset=True)
-    db_post.sqlmodel_update(post_data)
+
+    # 내용 업데이트
+    if content is not None:
+        db_post.content = content
+
+    # 이미지 삭제
+    if remove_image:
+        db_post.image_path = None
+
+    # 새로운 이미지 추가
+    if file:
+        allowed_extensions = {".jpg", ".png"}
+        file_extension = Path(file.filename).suffix.lower()
+
+        if file_extension not in allowed_extensions:
+            raise HTTPException(status_code=400, detail="Invalid file format")
+
+        unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+        file_path = UPLOAD_DIR / unique_filename
+
+        with file_path.open("wb") as f:
+            f.write(await file.read())
+
+        db_post.image_path = str(file_path)
+
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
     return db_post
+
+@router.delete("/post/{post_id}/delete_image", response_model=PostPublic)
+def delete_image(*, post_id: int, session: SessionDep):
+    # 데이터베이스에서 게시물 가져오기
+    db_post = session.get(Post, post_id)
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # image_path가 있는 경우 삭제
+    if db_post.image_path:
+        db_post.image_path = None  # 데이터베이스에서 이미지 경로 제거
+        session.add(db_post)
+        session.commit()
+        session.refresh(db_post)
+    else:
+        raise HTTPException(status_code=400, detail="No image to delete")  # 삭제할 이미지가 없는 경우 예외 처리
+
+    return db_post
+
 
 @router.delete("/post/{post_id}")
 def delete_post(*, post_id: int, session: SessionDep):
