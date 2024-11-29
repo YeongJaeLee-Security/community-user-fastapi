@@ -12,6 +12,7 @@ class PostBase(SQLModel):
     date: datetime
 
     author: int | None = Field(default=None, foreign_key="user.id")
+    image_path: str | None = Field(default=None)
 
 class Post(PostBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
