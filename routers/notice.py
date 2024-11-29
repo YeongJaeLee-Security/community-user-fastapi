@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 import requests
 import json
-from datetime import datetime
 
 router = APIRouter()
 
@@ -60,25 +59,20 @@ def read_notice():
                 detail="No notices available"
             )
 
-        # 날짜를 기준으로 정렬
+        # `id`를 기준으로 정렬
         try:
             sorted_notices = sorted(
                 notices,
-                key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d %H:%M:%S"),  # 시간까지 포함
-                reverse=True
+                key=lambda x: x['id'],  # `id` 기준으로 정렬
+                reverse=True  # 내림차순
             )
         except KeyError:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Invalid notice format: Missing 'date' field"
-            )
-        except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Invalid date format in notice: {str(e)}"
+                detail="Invalid notice format: Missing 'id' field"
             )
 
-        # 최신 공지 반환 검증
+        # 가장 큰 `id`를 가진 공지 반환
         latest_notice = sorted_notices[0].get("title") if sorted_notices else None
         if not latest_notice:
             raise HTTPException(
