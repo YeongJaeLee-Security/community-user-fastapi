@@ -6,23 +6,36 @@ from datetime import datetime
 
 router = APIRouter()
 
+# 플래그 상태 변수
+is_notice_api_unavailable = False
+
 @router.get("/notice", status_code=status.HTTP_200_OK)
 def read_notice(session: SessionDep):
+    global is_notice_api_unavailable
+
+    # 503 에러 상태라면 즉시 차단
+    if is_notice_api_unavailable:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The notices API server is currently unavailable. Retry later."
+        )
+
     url = "http://localhost:8010/notice/notices"
     try:
         resp = requests.get(url=url)
         resp.raise_for_status()
     except requests.ConnectionError:
+        is_notice_api_unavailable = True  # 플래그 설정
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="The notices API server is unavailable."
         )
     except requests.Timeout:
+        is_notice_api_unavailable = True  # 플래그 설정
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="The notices API server timed out."
         )
-    
 
     if resp.status_code == 200:
         # JSON으로 변환
