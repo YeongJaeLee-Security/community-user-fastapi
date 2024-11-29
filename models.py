@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 from pydantic import EmailStr
-from typing import Optional
+from fastapi import UploadFile
 
 class Image(SQLModel, table=True):
     id: int = Field(primary_key=True)
@@ -53,11 +53,13 @@ class PostPublic(PostBase):
     id: int
 
 class PostCreate(PostBase):
-    pass
+    file: UploadFile | None = None
 
 class PostUpdate(PostBase):
     content: str | None = None
-    image_path: Optional[str] = None
+    file: UploadFile | None = None
+    image_path: str | None = None
+    remove_image: bool | None = False,
 
 class UserSignBase(SQLModel):
     email: EmailStr
@@ -71,17 +73,26 @@ class UserSignIn(UserSignBase):
 
 class UserBase(SQLModel):
     email: EmailStr = Field(index=True, unique=True)
-    password: str
     username: str = Field(index=True, unique=True)
     report_count: int = Field(default=0)
     isBan: bool = Field(default=False)
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    password: str
 
-    reports: list[Report] = Relationship(back_populates="user")
-    logs: list[Log] = Relationship(back_populates="user")
-    posts: list[Post] = Relationship(back_populates="user")
+    reports: list[Report] = Relationship(
+        back_populates="user",
+        cascade_delete=True
+    )
+    logs: list[Log] = Relationship(
+        back_populates="user",
+        cascade_delete=True
+    )
+    posts: list[Post] = Relationship(
+        back_populates="user",
+        cascade_delete=True
+    )
 
 class UserPublic(UserBase):
     id: int

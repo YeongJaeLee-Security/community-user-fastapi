@@ -35,16 +35,13 @@ async def sign_new_user(data: UserSignUp, session: SessionDep) -> dict:
             detail="동일한 사용자 이름이 존재합니다."
         )
 
-    new_user = User(
-        email=data.email,
-        password=hash_password.hash_password(data.password),
-        username=data.username
-        )
-
-    session.add(new_user)
+    hashed_password = hash_password.hash_password(data.password)
+    extra_data = {"password": hashed_password}
+    db_user = User.model_validate(data, update=extra_data)
+    session.add(db_user)
     session.commit()
+    session.refresh(db_user)
     return {"message": "정상적으로 등록되었습니다."}
-
 
 # 로그인 처리
 @router.post("/signin")
@@ -143,23 +140,12 @@ def update_auth(
     if not db_auth:
         raise HTTPException(status_code=404, detail="User not found")
 
-    statement = select(User).where(User.email == auth.email)
-    user = session.exec(statement).first()
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="동일한 이메일이 존재합니다."
-        )
-    statement = select(User).where(User.username == auth.username)
-    user = session.exec(statement).first()
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="동일한 사용자 이름이 존재합니다."
-        )
-
     auth_data = auth.model_dump(exclude_unset=True)
-    db_auth.sqlmodel_update(auth_data)
+    extra_data = {}
+    if "password" in auth_data:
+        password = auth_data["password"]
+        extra_data["password"] = hash_password.hash_password(password)
+    db_auth.sqlmodel_update(auth_data, update=extra_data)
     session.add(db_auth)
     session.commit()
     session.refresh(db_auth)
@@ -206,7 +192,7 @@ def read_user_all(session: SessionDep):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No users found."
         )
-    
+
     return { "message": users }
 
 # 사용자 로그 전체 조회 - 관리자만 사용
@@ -219,7 +205,7 @@ def read_user_log_all(session: SessionDep):
 
     if not logs:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 로그 조회 실패")
-    
+
     return logs
 
 # 사용자별 로그 조회 - 관리자만 사용
@@ -229,10 +215,10 @@ def read_user_log(user_id: int, session: SessionDep):
         log_by_user_id = session.exec(select(Log).where(Log.user_id==user_id)).all()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="INTERNAL_SEVER_ERROR")
-    
+
     if not log_by_user_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 로그 조회 실패")
-    
+
     return log_by_user_id
 
 # 사용자 Ban 처리 - 관리자만 사용
@@ -245,13 +231,13 @@ def ban_user(request: BanUserRequest, session: SessionDep):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="INTERNAL_SERVER_ERROR"
         )
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="일치하는 사용자가 없습니다."
         )
-    
+
     user.isBan = request.isBan
     session.add(user)
     session.commit()
@@ -269,11 +255,11 @@ def read_ban_user(user_id: int, session: SessionDep):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="INTERNAL_SERVER_ERROR"
         )
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="일치하는 사용자가 없습니다."
         )
-    
+
     return { "message" : user.isBan }
