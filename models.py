@@ -74,6 +74,7 @@ class UserBase(SQLModel):
     password: str
     username: str = Field(index=True, unique=True)
     report_count: int = Field(default=0)
+    isBan: bool = Field(default=False)
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -90,9 +91,14 @@ class UserUpdate(UserBase):
     password: str | None = None
     username: str | None = None
     report_count: int| None = None
+    isBan: bool = Field(default=False)
 
 class UserPublicWithPosts(UserPublic):
     posts: list[PostPublic] | None = []
 
 class PostPublicWithUser(PostPublic):
     user: UserPublic
+
+class BanUserRequest(SQLModel):
+    user_id: int
+    isBan: bool

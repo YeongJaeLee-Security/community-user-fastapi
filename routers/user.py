@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 # from models.user import User, UserSignIn, UserSignUp
 from models import Log, LogData
 from models import User, UserSignIn, UserSignUp
-from models import UserPublic, UserUpdate, UserPublicWithPosts
+from models import UserPublic, UserUpdate, UserPublicWithPosts, BanUserRequest
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.hash_password import HashPassword
@@ -234,3 +234,27 @@ def read_user_log(user_id: int, session: SessionDep):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 로그 조회 실패")
     
     return log_by_user_id
+
+# 사용자 Ban 처리 - 관리자만 사용
+@router.patch("/user/report/ban", status_code=status.HTTP_200_OK)
+def ban_user(request: BanUserRequest, session: SessionDep):
+    try:
+        user = session.exec(select(User).where(User.id == request.user_id)).first()
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="INTERNAL_SERVER_ERROR"
+        )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="일치하는 사용자가 없습니다."
+        )
+    
+    user.isBan = request.isBan
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return {"message": "사용자 Ban 완료" if request.isBan else "사용자 Ban 취소"}
