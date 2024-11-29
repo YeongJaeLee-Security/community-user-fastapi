@@ -1,12 +1,13 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile
+from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile, Form
 # from models.post import Post, PostPublic, PostCreate, PostUpdate
 from models import Post, PostPublic, PostCreate, PostUpdate, PostPublicWithUser
 from database.connection import SessionDep
 from sqlmodel import select
 from auth.authenticate import authenticate
 from pathlib import Path
+from datetime import datetime
 import uuid
 
 router = APIRouter()
@@ -14,7 +15,9 @@ router = APIRouter()
 UPLOAD_DIR = Path("uploaded_files")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-async def save_file(file: UploadFile) -> str | None:
+
+async def save_file(file: UploadFile) -> Optional[str]:
+
     allowed_extensions = {".jpg", ".png"}
     file_extension = Path(file.filename).suffix.lower()
 
@@ -27,33 +30,42 @@ async def save_file(file: UploadFile) -> str | None:
     try:
         with file_path.open("wb") as f:
             f.write(await file.read())
-        return str(file_path)
+        return str(file_path) 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
+
 @router.post("/submit", response_model=PostPublic)
 async def create_post(
-    *,
-    post: PostCreate,
-    user_id=Depends(authenticate),
     session: SessionDep,
+    title: str = Form(...),
+    content: str = Form(...),
+    file: Optional[UploadFile] = None,
+    user_id=Depends(authenticate)
 ):
-    extra_data = {}
+    image_path = None
 
-    if post.file:
-        if post.file.filename:
+    if file:
+        if file.filename:
             try:
-                extra_data["image_path"] = await save_file(post.file)
+                image_path = await save_file(file)
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"File upload failed: {e}")
+        else:
+            image_path = None
 
     try:
-        post.author = user_id
-        db_post = Post.model_validate(post, update=extra_data)
-        session.add(db_post)
+        post = Post(
+            title=title,
+            content=content,
+            author=user_id,
+            date=datetime.utcnow(),
+            image_path=image_path 
+        )
+        session.add(post)
         session.commit()
-        session.refresh(db_post)
-        return db_post
+        session.refresh(post)
+        return post
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
@@ -71,23 +83,28 @@ def read_post(*, post_id: int, session: SessionDep):
 
 @router.patch("/post/{post_id}", response_model=PostPublic)
 async def update_post(
-    *,
-    post_id: int,
-    post: PostUpdate,
     session: SessionDep,
+    post_id: int,
+    content: Optional[str] = Form(None),
+    file: Optional[UploadFile] = None,
+    remove_image: Optional[bool] = False,
 ):
     db_post = session.get(Post, post_id)
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    post_data = post.model_dump(exclude_unset=True)
-    extra_data = {}
-    if post_data["remove_image"]:
-        extra_data["image_path"] = None
+    # 내용 업데이트
+    if content is not None:
+        db_post.content = content
 
-    if "file" in post_data:
+    # 이미지 삭제
+    if remove_image:
+        db_post.image_path = None
+
+    # 새로운 이미지 추가
+    if file:
         allowed_extensions = {".jpg", ".png"}
-        file_extension = Path(post_data["file"]["file_name"]).suffix.lower()
+        file_extension = Path(file.filename).suffix.lower()
 
         if file_extension not in allowed_extensions:
             raise HTTPException(status_code=400, detail="Invalid file format")
@@ -97,13 +114,12 @@ async def update_post(
 
         with file_path.open("wb") as f:
             f.write(await file.read())
-        extra_data["image_path"] = str(file_path)
 
-    db_post.sqlmodel_update(post_data, update=extra_data)
+        db_post.image_path = str(file_path)
+
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
-
     return db_post
 
 @router.delete("/post/{post_id}/delete_image", response_model=PostPublic)
@@ -124,6 +140,7 @@ def delete_image(*, post_id: int, session: SessionDep):
 
     return db_post
 
+
 @router.delete("/post/{post_id}")
 def delete_post(*, post_id: int, session: SessionDep):
     post = session.get(Post, post_id)
@@ -139,6 +156,7 @@ def search_post(
     title: Annotated[str | None, Query(max_length=50)] = None,
     session: SessionDep
 ):
+    print(title)
     if title is None or title.strip() == "":
         raise HTTPException(status_code=400, detail="Search title cannot be empty")
 
