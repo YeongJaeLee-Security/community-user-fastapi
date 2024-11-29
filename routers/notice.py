@@ -64,13 +64,18 @@ def read_notice():
         try:
             sorted_notices = sorted(
                 notices,
-                key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d"),
+                key=lambda x: datetime.strptime(x['date'], "%Y-%m-%d %H:%M:%S"),  # 시간까지 포함
                 reverse=True
             )
         except KeyError:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Invalid notice format: Missing 'date' field"
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Invalid date format in notice: {str(e)}"
             )
 
         # 최신 공지 반환 검증
