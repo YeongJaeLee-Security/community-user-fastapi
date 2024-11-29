@@ -258,3 +258,22 @@ def ban_user(request: BanUserRequest, session: SessionDep):
     session.refresh(user)
 
     return {"message": "사용자 Ban 완료" if request.isBan else "사용자 Ban 취소"}
+
+# 사용자별 Ban 조회
+@router.get("/user/report/ban/{user_id}", status_code=status.HTTP_200_OK)
+def read_ban_user(user_id: int, session: SessionDep):
+    try:
+        user = session.exec(select(User).where(User.id == user_id)).first()
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="INTERNAL_SERVER_ERROR"
+        )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="일치하는 사용자가 없습니다."
+        )
+    
+    return { "message" : user.isBan }
