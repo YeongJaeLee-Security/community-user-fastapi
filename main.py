@@ -3,6 +3,7 @@ from routers import auth, user, post, report, notice
 from fastapi import FastAPI
 from database.connection import connection
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,6 +26,8 @@ app.include_router(auth.router, tags=["auth"])
 app.include_router(post.router, tags=["post"])
 app.include_router(report.router, tags=["report"])
 app.include_router(notice.router, tags=["notice"])
+
+app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,29 +1,73 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, File, UploadFile, Form
 # from models.post import Post, PostPublic, PostCreate, PostUpdate
 from models import Post, PostPublic, PostCreate, PostUpdate, PostPublicWithUser
 from database.connection import SessionDep
 from sqlmodel import select
-
 from auth.authenticate import authenticate
+from pathlib import Path
+from datetime import datetime
+import uuid
 
 router = APIRouter()
 
+UPLOAD_DIR = Path("uploaded_files")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+async def save_file(file: UploadFile) -> Optional[str]:
+
+    allowed_extensions = {".jpg", ".png"}
+    file_extension = Path(file.filename).suffix.lower()
+
+    if file_extension not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Only JPG and PNG files are allowed.")
+
+    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+    file_path = UPLOAD_DIR / unique_filename
+
+    try:
+        with file_path.open("wb") as f:
+            f.write(await file.read())
+        return str(file_path) 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+
 @router.post("/submit", response_model=PostPublic)
-def create_post(
-    *,
-    post: PostCreate,
-    user_id = Depends(authenticate),
-    session: SessionDep
+async def create_post(
+    session: SessionDep,
+    title: str = Form(...),
+    content: str = Form(...),
+    file: Optional[UploadFile] = None,
+    user_id=Depends(authenticate)
 ):
-    post.author = user_id
-    db_post = Post.model_validate(post)
-    # post.author = user_id
-    session.add(db_post)
-    session.commit()
-    session.refresh(db_post)
-    return db_post
+    image_path = None
+
+    if file:
+        if file.filename:
+            try:
+                image_path = await save_file(file)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"File upload failed: {e}")
+        else:
+            image_path = None
+
+    try:
+        post = Post(
+            title=title,
+            content=content,
+            author=user_id,
+            date=datetime.utcnow(),
+            image_path=image_path 
+        )
+        session.add(post)
+        session.commit()
+        session.refresh(post)
+        return post
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 @router.get("/post", response_model=list[PostPublicWithUser])
 def read_posts(session: SessionDep):
