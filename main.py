@@ -13,7 +13,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-ALLOWED_REFERRERS = ["http://localhost:8000", "http://localhost:8010", "http://localhost:3000", "http://localhost:3010"]
+ALLOWED_REFERRERS = ["http://localhost:8000", "http://localhost:8010", "http://localhost:3000", "http://localhost:3010", 
+                     "http://127.0.0.1:8000", "http://127.0.0.1:8010", "http://127.0.0.1:3000", "http://127.0.0.1:3010"]
 
 @app.middleware("http")
 async def verify_referer(request: Request, call_next):
