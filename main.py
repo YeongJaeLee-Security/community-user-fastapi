@@ -29,7 +29,7 @@ async def verify_referer(request: Request, call_next):
 # CORS(교차 출처 리소스 공유) 오류 해결
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:3010"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS", "PATCH"],
     allow_headers=["*"],
