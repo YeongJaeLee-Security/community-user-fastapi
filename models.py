@@ -12,6 +12,7 @@ class Log(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     login_date: datetime
     user_agent: str
+    user_referer: str
     user_id: int = Field(default=None, foreign_key="user.id")
 
     user: "User" = Relationship(back_populates="logs")
@@ -19,6 +20,7 @@ class Log(SQLModel, table=True):
 class LogData(SQLModel):
     login_date: datetime
     user_agent: str
+    user_referer: str
     user_id: int
 
 class Report(SQLModel, table=True):

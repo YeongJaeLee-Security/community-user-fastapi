@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response, Request
 # from models.log import Log
 # from models.user import User, UserSignIn, UserSignUp
-from models import Log
+from models import Log, LogData
 from models import User, UserSignIn, UserSignUp
 from models import UserPublic, UserUpdate, UserPublicWithPosts
 from database.connection import SessionDep
@@ -81,6 +81,7 @@ async def sign_in(data: UserSignIn, response: Response, session: SessionDep, req
     log_data = Log(
         login_date=datetime.now(),
         user_agent=request.headers.get('user-agent'),
+        user_referer=request.headers.get("Referer"),
         user_id=user.id
     )
 
@@ -177,3 +178,59 @@ def delete_auth(
     session.delete(auth)
     session.commit()
     return {"ok": True}
+
+# 사용자 전체 조회 - 관리자만 사용
+@router.get("/user", status_code=status.HTTP_200_OK)
+def read_user_all(session: SessionDep):
+    try:
+        stmt = select(User.id, User.email, User.username, User.report_count)
+        result = session.exec(stmt).all()
+
+        users = [
+            {
+                "id": user[0],
+                "email": user[1],
+                "username": user[2],
+                "report_count": user[3]
+            }
+            for user in result
+        ]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="INTERNAL_SERVER_ERROR"
+        )
+
+    if not users:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No users found."
+        )
+    
+    return { "message": users }
+
+# 사용자 로그 전체 조회 - 관리자만 사용
+@router.get("/user/log", status_code=status.HTTP_200_OK, response_model=list[LogData])
+def read_user_log_all(session: SessionDep):
+    try:
+        logs = session.exec(select(Log)).all()
+    except:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="INTERNAL_SEVER_ERROR")
+
+    if not logs:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 로그 조회 실패")
+    
+    return logs
+
+# 사용자별 로그 조회 - 관리자만 사용
+@router.get("/user/log/{user_id}", status_code=status.HTTP_200_OK)
+def read_user_log(user_id: int, session: SessionDep):
+    try:
+        log_by_user_id = session.exec(select(Log).where(Log.user_id==user_id)).all()
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="INTERNAL_SEVER_ERROR")
+    
+    if not log_by_user_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="사용자 로그 조회 실패")
+    
+    return log_by_user_id

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status
-from database.connection import SessionDep
 import requests
 import json
 from datetime import datetime
@@ -10,7 +9,7 @@ router = APIRouter()
 is_notice_api_unavailable = False
 
 @router.get("/notice", status_code=status.HTTP_200_OK)
-def read_notice(session: SessionDep):
+def read_notice():
     global is_notice_api_unavailable
 
     # 503 에러 상태라면 즉시 차단
