@@ -15,15 +15,6 @@ app = FastAPI(lifespan=lifespan)
 
 ALLOWED_REFERRERS = ["http://localhost:8000", "http://localhost:8010", "http://localhost:3000", "http://localhost:3010"]
 
-# CORS(교차 출처 리소스 공유) 오류 해결
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS", "PATCH"],
-    allow_headers=["*"],
-)
-
 @app.middleware("http")
 async def verify_referer(request: Request, call_next):
     referer = request.headers.get("referer")
@@ -33,6 +24,15 @@ async def verify_referer(request: Request, call_next):
     # 요청이 허용된 경우 다음 미들웨어 또는 엔드포인트로 전달
     response = await call_next(request)
     return response
+
+# CORS(교차 출처 리소스 공유) 오류 해결
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+)
 
 app.include_router(user.router, prefix="/auth", tags=["user"])
 app.include_router(auth.router, tags=["auth"])
